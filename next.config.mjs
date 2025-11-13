@@ -20,7 +20,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   // Ensure Next chooses this project as the tracing root (avoids picking parent dirs)
-  outputFileTracingRoot: path.join(__dirname),
+  outputFileTracingRoot: process.cwd(),
   async headers() {
     return [
       {
