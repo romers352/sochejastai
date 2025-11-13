@@ -1,0 +1,55 @@
+{
+  "name": "sochejastai",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack -p 4000",
+    "build": "next build",
+    "build:cloudlinux": "NEXT_DISABLE_SWC_WASM=1 DISABLE_MINIFY=1 NODE_OPTIONS=--max-old-space-size=2048 next build",
+    "start": "next start -p 4000",
+    "start:standalone": "node .next/standalone/server.js",
+    "start:file": "node server.js",
+    "lint": "eslint",
+    "seed:json": "node scripts/seed-from-json.mjs",
+    "seed:json:clear": "node scripts/seed-from-json.mjs --clear",
+    "seed:demo": "node scripts/seed-demo.mjs",
+    "prune": "node scripts/cleanup-assets.mjs"
+  },
+  "dependencies": {
+    "@tiptap/extension-color": "^3.10.5",
+    "@tiptap/extension-heading": "^3.10.5",
+    "@tiptap/extension-image": "^3.10.5",
+    "@tiptap/extension-link": "^3.10.5",
+    "@tiptap/extension-text-align": "^3.10.5",
+    "@tiptap/extension-text-style": "^3.10.5",
+    "@tiptap/extension-underline": "^3.10.5",
+    "@tiptap/react": "^3.10.5",
+    "@tiptap/starter-kit": "^3.10.5",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^3.0.2",
+    "express-rate-limit": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.10.0",
+    "next": "15.5.4",
+    "quill": "^2.0.3",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "sharp": "^0.34.4",
+    "swiper": "^12.0.2"
+  },
+  "optionalDependencies": {
+    "@next/swc-linux-x64-gnu": "15.5.4"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
