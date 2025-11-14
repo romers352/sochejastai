@@ -7,6 +7,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [compact, setCompact] = useState<boolean>(false);
+  const [isDesktop, setIsDesktop] = useState<boolean>(false);
 
   useEffect(() => {
     const c = localStorage.getItem("admin_sidebar_collapsed");
@@ -14,6 +15,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setCollapsed(c === "true");
     setCompact(d === "true");
   }, []);
+
+  // Track viewport and force sidebar visible on desktop (md and up)
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    setIsDesktop(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  // Override collapsed state on desktop to ensure sidebar is visible
+  useEffect(() => {
+    if (isDesktop) {
+      setCollapsed(false);
+    }
+  }, [isDesktop]);
 
   useEffect(() => {
     localStorage.setItem("admin_sidebar_collapsed", String(collapsed));
@@ -63,7 +80,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <button
               type="button"
               onClick={() => setCollapsed((v) => !v)}
-              className="px-3 py-1 rounded-md border border-black text-black bg-white hover:bg-black/10"
+              className="px-3 py-1 rounded-md border border-black text-black bg-white hover:bg-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isDesktop}
               title="Collapse/expand sidebar"
             >
               {collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
@@ -79,7 +97,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </header>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
-        {!collapsed && (
+        {(isDesktop || !collapsed) && (
           <aside className="md:sticky md:top-6 self-start rounded-xl border border-black/10 bg-white" aria-label="Admin Navigation">
             <nav className="py-2">
               {navCategories.map((cat) => (
