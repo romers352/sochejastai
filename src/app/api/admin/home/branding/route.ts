@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 export const runtime = 'nodejs';
 import { promises as fs } from "fs";
 import path from "path";
-import pool from "../../../../lib/db";
+import pool from "@/lib/db";
 import { savePublicUpload } from "@/lib/uploads";
 
 const dataPath = path.join(process.cwd(), "data", "branding.json");
