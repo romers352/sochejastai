@@ -95,9 +95,10 @@ export default function Home() {
             pagination={{ clickable: true }}
             navigation={{ prevEl: ".hero-prev", nextEl: ".hero-next" }}
             loop={slides.length > 1}
+            autoHeight={true}
             observer
             observeParents
-            className="w-full h-[50vh] sm:h-[60vh] lg:h-[70vh]"
+            className="w-full h-auto"
           >
           {slides.map((s, i) => (
             <SwiperSlide key={i}>
@@ -120,24 +121,54 @@ export default function Home() {
                     : undefined;
                   const classFallback = !looksLikeUrl(s.bg) && typeof s.bg === "string" ? s.bg : "bg-center bg-cover";
                   return (
-                    <div className="h-full w-full relative text-[#ff914d] flex items-center justify-center">
-                      {/* Desktop/wide background */}
-                      {/* Desktop/Wide backdrop stack: gradient + blurred cover + tint + contain image */}
-                      <div className="absolute inset-0 hidden md:block" aria-hidden>
-                        <div
-                          className={`absolute inset-0 ${wideUrl ? "bg-center bg-no-repeat bg-auto" : classFallback} transition-transform duration-700`}
-                          style={wideUrl ? { backgroundImage: `url(${wideUrl})` } : undefined}
-                        />
+                    <div className="w-full relative text-[#ff914d]">
+                      {/* Render banner image at natural size, no crop */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {wideUrl && (
+                        <img src={wideUrl} alt="Banner" className="hidden md:block max-w-full h-auto mx-auto" />
+                      )}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {squareUrl && (
+                        <img src={squareUrl} alt="Banner" className="block md:hidden max-w-full h-auto mx-auto" />
+                      )}
+                      {/* Overlay text centered over the image */}
+                      <div className="absolute inset-0 flex items-center justify-center text-center px-4 pointer-events-none">
+                        <div className="pointer-events-auto">
+                          <h1 className="text-3xl sm:text-5xl font-extrabold animate-fade-in-up delay-300">{s.title}</h1>
+                          <p className="mt-3 text-base sm:text-xl animate-fade-in-up delay-500">{s.subtitle}</p>
+                          {photos.length > 0 && (
+                            <div className="mt-4 flex justify-center gap-3 px-2 animate-fade-in-up delay-700">
+                              {photos.map((src, idx) => {
+                                const targets = ["/photos", "/videos", "/graphics"] as const;
+                                const href = targets[idx] || "/photos";
+                                const labels = ["Go to Photos", "Go to Videos", "Go to Graphics"];
+                                return (
+                                  <Link key={idx} href={href} aria-label={labels[idx] || "Open gallery"} className="block">
+                                    <div className="h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32 rounded-md overflow-hidden border border-white/30 bg-white/90 hover:ring-2 hover:ring-[#ff914d] transition-all duration-300 hover:shadow-lg transform">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img src={src} alt={`Banner photo ${idx + 1}`} className="h-full w-full object-cover transition-transform duration-300" />
+                                    </div>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      {/* Mobile/square background */}
-                      {/* Mobile/Square backdrop stack: gradient + blurred cover + tint + contain image */}
-                      <div className="absolute inset-0 block md:hidden" aria-hidden>
-                        <div
-                          className={`absolute inset-0 ${squareUrl ? "bg-center bg-no-repeat bg-auto" : classFallback} transition-transform duration-700`}
-                          style={squareUrl ? { backgroundImage: `url(${squareUrl})` } : undefined}
-                        />
-                      </div>
-                      <div className="relative text-center px-4 animate-slide-up">
+                    </div>
+                  );
+                }
+                // Fallback: original behavior using bg as class or single image URL
+                const isUrl = looksLikeUrl(s.bg);
+                const isClass = !isUrl && typeof s.bg === "string";
+                const style = undefined;
+                const classes = isClass ? s.bg : "";
+                return (
+                  <div className={`w-full ${classes} text-[#ff914d] relative transition-transform duration-700`} style={style}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {isUrl && <img src={s.bg as string} alt="Banner" className="max-w-full h-auto mx-auto" />}
+                    <div className="absolute inset-0 flex items-center justify-center text-center px-4 pointer-events-none">
+                      <div className="pointer-events-auto">
                         <h1 className="text-3xl sm:text-5xl font-extrabold animate-fade-in-up delay-300">{s.title}</h1>
                         <p className="mt-3 text-base sm:text-xl animate-fade-in-up delay-500">{s.subtitle}</p>
                         {photos.length > 0 && (
@@ -158,36 +189,6 @@ export default function Home() {
                           </div>
                         )}
                       </div>
-                    </div>
-                  );
-                }
-                // Fallback: original behavior using bg as class or single image URL
-                const isUrl = looksLikeUrl(s.bg);
-                const isClass = !isUrl && typeof s.bg === "string";
-                const style = isUrl ? { backgroundImage: `url(${s.bg})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined;
-                const classes = isClass ? s.bg : "bg-center bg-contain bg-no-repeat";
-                return (
-                  <div className={`h-full w-full ${classes} text-[#ff914d] flex items-center justify-center transition-transform duration-700`} style={style}>
-                    <div className="text-center px-4 animate-slide-up">
-                      <h1 className="text-3xl sm:text-5xl font-extrabold animate-fade-in-up delay-300">{s.title}</h1>
-                      <p className="mt-3 text-base sm:text-xl animate-fade-in-up delay-500">{s.subtitle}</p>
-                      {photos.length > 0 && (
-                        <div className="mt-4 flex justify-center gap-3 px-2 animate-fade-in-up delay-700">
-                          {photos.map((src, idx) => {
-                            const targets = ["/photos", "/videos", "/graphics"] as const;
-                            const href = targets[idx] || "/photos";
-                            const labels = ["Go to Photos", "Go to Videos", "Go to Graphics"];
-                            return (
-                              <Link key={idx} href={href} aria-label={labels[idx] || "Open gallery"} className="block">
-                                <div className="h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32 rounded-md overflow-hidden border border-white/30 bg-white/90 hover:ring-2 hover:ring-[#ff914d] transition-all duration-300 hover:shadow-lg transform">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img src={src} alt={`Banner photo ${idx + 1}`} className="h-full w-full object-cover transition-transform duration-300" />
-                                </div>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
                   </div>
                 );
