@@ -126,7 +126,7 @@ export default function Home() {
                       <div className="absolute inset-0 hidden md:block" aria-hidden>
                         <div className="absolute inset-0 bg-gradient-to-br from-[#0b254a] via-[#0a1f3e] to-[#081833]" />
                         <div
-                          className={`absolute inset-0 ${wideUrl ? "bg-center bg-cover" : classFallback} blur-2xl brightness-75 transition-transform duration-700`}
+                          className={`absolute inset-0 ${wideUrl ? "bg-center bg-cover" : classFallback} transition-transform duration-700`}
                           style={wideUrl ? { backgroundImage: `url(${wideUrl})` } : undefined}
                         />
                         <div className="absolute inset-0 bg-[#0b254a] opacity-40" />
@@ -140,7 +140,7 @@ export default function Home() {
                       <div className="absolute inset-0 block md:hidden" aria-hidden>
                         <div className="absolute inset-0 bg-gradient-to-br from-[#0b254a] via-[#0a1f3e] to-[#081833]" />
                         <div
-                          className={`absolute inset-0 ${squareUrl ? "bg-center bg-cover" : classFallback} blur-2xl brightness-75 transition-transform duration-700`}
+                          className={`absolute inset-0 ${squareUrl ? "bg-center bg-cover" : classFallback} transition-transform duration-700`}
                           style={squareUrl ? { backgroundImage: `url(${squareUrl})` } : undefined}
                         />
                         <div className="absolute inset-0 bg-[#0b254a] opacity-40" />
