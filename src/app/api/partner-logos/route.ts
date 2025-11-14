@@ -35,14 +35,7 @@ export async function GET() {
     const logos = await filterExistingLocal(rowsLogos);
     return NextResponse.json({ logos });
   } catch (dbErr) {
-    try {
-      const buf = await fs.readFile(dataPath, "utf-8");
-      const json = JSON.parse(buf || "{}") || {};
-      const jsonLogos = Array.isArray(json.logos) ? json.logos : [];
-      const logos = await filterExistingLocal(jsonLogos);
-      return NextResponse.json({ logos });
-    } catch {
-      return NextResponse.json({ logos: [] });
-    }
+    // Do not auto-load from local JSON; return empty to avoid unintended data
+    return NextResponse.json({ logos: [] });
   }
 }
