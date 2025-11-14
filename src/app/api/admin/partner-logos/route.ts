@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 import { promises as fs } from "fs";
 import path from "path";
 import { cookies } from "next/headers";
@@ -8,15 +9,16 @@ import pool from "../../../../lib/db";
 const dataPath = path.join(process.cwd(), "data", "partner_logos.json");
 
 async function readData(): Promise<{ logos: string[] }> {
+  // Prefer database first to reflect production updates; fallback to JSON if DB fails
   try {
-    const buf = await fs.readFile(dataPath, "utf-8");
-    const json = JSON.parse(buf || "{}") || {};
-    return { logos: Array.isArray(json.logos) ? json.logos : [] };
+    const [rows] = await pool.query("SELECT src FROM partner_logos ORDER BY id ASC");
+    const logos = Array.isArray(rows) ? (rows as any[]).map((r) => String(r.src)).filter(Boolean) : [];
+    return { logos };
   } catch {
     try {
-      const [rows] = await pool.query("SELECT src FROM partner_logos ORDER BY id ASC");
-      const logos = Array.isArray(rows) ? (rows as any[]).map((r) => String(r.src)).filter(Boolean) : [];
-      return { logos };
+      const buf = await fs.readFile(dataPath, "utf-8");
+      const json = JSON.parse(buf || "{}") || {};
+      return { logos: Array.isArray(json.logos) ? json.logos : [] };
     } catch {
       return { logos: [] };
     }

@@ -1,9 +1,21 @@
 import { promises as fs } from "fs";
 import path from "path";
+import pool from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 async function readLegal(): Promise<{ privacy_html: string; terms_html: string }> {
+  // Prefer DB first (dynamic), fallback to JSON file
+  try {
+    const [rows] = await pool.query("SELECT privacy_html, terms_html FROM legal WHERE id = 1");
+    const row = Array.isArray(rows) && rows.length ? (rows as any)[0] : null;
+    if (row) {
+      return {
+        privacy_html: row.privacy_html || "",
+        terms_html: row.terms_html || "",
+      };
+    }
+  } catch {}
   try {
     const dataPath = path.join(process.cwd(), "data", "legal.json");
     const buf = await fs.readFile(dataPath, "utf-8");

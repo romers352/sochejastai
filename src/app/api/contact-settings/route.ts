@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import pool from "@/lib/db";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 // Use only the inner project data directory
 const dataPath = path.join(process.cwd(), "data", "contact_settings.json");
@@ -12,6 +15,18 @@ type ContactSettings = {
 };
 
 async function readSettings(): Promise<ContactSettings> {
+  // Prefer DB first, fallback to file
+  try {
+    const [rows] = await pool.query("SELECT email, phone, hours FROM contact_info WHERE id = 1");
+    const row = Array.isArray(rows) && rows.length ? (rows as any)[0] : null;
+    if (row) {
+      return {
+        email: row.email || "hello@sochejastai.example",
+        phone: row.phone || "+977-9800000000",
+        hours: row.hours || "Mon–Fri, 9:00 AM – 6:00 PM",
+      };
+    }
+  } catch {}
   try {
     const buf = await fs.readFile(dataPath, "utf-8");
     const json = JSON.parse(buf || "{}") || {};

@@ -86,3 +86,54 @@ CREATE TABLE IF NOT EXISTS `services` (
   PRIMARY KEY (`id`),
   INDEX (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Partner Logos (used by homepage carousel)
+CREATE TABLE IF NOT EXISTS `partner_logos` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `src` VARCHAR(1024) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Partners (optional metadata; not yet wired to UI)
+CREATE TABLE IF NOT EXISTS `partners` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) NOT NULL,
+  `website` VARCHAR(1024) NULL,
+  `description` TEXT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Legal content (Privacy & Terms)
+CREATE TABLE IF NOT EXISTS `legal` (
+  `id` INT UNSIGNED NOT NULL,
+  `privacy_html` MEDIUMTEXT NULL,
+  `terms_html` MEDIUMTEXT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Contact Info (email/phone/hours shown on Contact page)
+CREATE TABLE IF NOT EXISTS `contact_info` (
+  `id` INT UNSIGNED NOT NULL,
+  `email` VARCHAR(255) NULL,
+  `phone` VARCHAR(64) NULL,
+  `hours` VARCHAR(255) NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- AI Agent external link (navbar button URL)
+CREATE TABLE IF NOT EXISTS `ai_agent` (
+  `id` INT UNSIGNED NOT NULL,
+  `url` VARCHAR(1024) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Homepage CTA images (photos/videos/graphics)
+CREATE TABLE IF NOT EXISTS `home_cta` (
+  `id` INT UNSIGNED NOT NULL,
+  `photos` VARCHAR(1024) NULL,
+  `videos` VARCHAR(1024) NULL,
+  `graphics` VARCHAR(1024) NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

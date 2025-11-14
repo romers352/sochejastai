@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import pool from "../../../../lib/db";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+import { put } from "@vercel/blob";
 
 const dataPath = path.join(process.cwd(), "data", "home_cta.json");
 
@@ -51,10 +55,22 @@ export async function POST(req: Request) {
       const ext = path.extname(original) || extFromMime(f.type) || ".bin";
       const base = safeName(path.parse(original).name) || slot;
       const filename = `${base}-${Date.now()}-${slot}${ext}`;
-      const filepath = path.join(uploadsDir, filename);
       const buf = Buffer.from(await f.arrayBuffer());
-      await fs.writeFile(filepath, buf);
-      saved[slot] = `/uploads/home/cta/${filename}`;
+      // Prefer Vercel Blob if token is available (works on Vercel)
+      const token = process.env.BLOB_READ_WRITE_TOKEN;
+      if (token) {
+        const res = await put(filename, buf, {
+          access: "public",
+          contentType: f.type || "application/octet-stream",
+          token,
+        });
+        saved[slot] = res.url;
+      } else {
+        // Local dev fallback to filesystem
+        const filepath = path.join(uploadsDir, filename);
+        await fs.writeFile(filepath, buf);
+        saved[slot] = `/uploads/home/cta/${filename}`;
+      }
     }
 
     await Promise.all([
@@ -76,9 +92,24 @@ export async function POST(req: Request) {
       graphics: saved.graphics || current.graphics || null,
     };
 
-    await fs.writeFile(dataPath, JSON.stringify(next, null, 2), "utf-8");
-
-    return NextResponse.json({ ok: true, ...next });
+    // Try file save first; if it fails (read-only), fallback to DB
+    try {
+      await fs.writeFile(dataPath, JSON.stringify(next, null, 2), "utf-8");
+      return NextResponse.json({ ok: true, ...next });
+    } catch (err) {
+      try {
+        await pool.execute(
+          "CREATE TABLE IF NOT EXISTS home_cta (id INT UNSIGNED NOT NULL, photos VARCHAR(1024) NULL, videos VARCHAR(1024) NULL, graphics VARCHAR(1024) NULL, PRIMARY KEY (id))"
+        );
+        await pool.execute(
+          "INSERT INTO home_cta (id, photos, videos, graphics) VALUES (1, ?, ?, ?) ON DUPLICATE KEY UPDATE photos=VALUES(photos), videos=VALUES(videos), graphics=VALUES(graphics)",
+          [next.photos, next.videos, next.graphics]
+        );
+        return NextResponse.json({ ok: true, ...next });
+      } catch (dbErr) {
+        return NextResponse.json({ error: "Failed to persist CTA images" }, { status: 500 });
+      }
+    }
   } catch (e) {
     console.error("CTA upload failed", e);
     return NextResponse.json({ error: "Failed to upload CTA images" }, { status: 500 });

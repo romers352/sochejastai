@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 export const runtime = 'nodejs';
-import { promises as fs } from "fs";
 import path from "path";
+import { isAuthenticatedAdminFromCookieHeader } from "@/lib/auth";
 import { savePublicUpload } from "@/lib/uploads";
 
 function extFromMime(mime: string): string {
@@ -16,52 +16,53 @@ function extFromMime(mime: string): string {
   return map[mime] || "";
 }
 
-function safeName(input: string): string {
-  return input
+function slugify(name: string): string {
+  return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 export async function POST(req: Request) {
-  const adminCookie = req.headers.get("cookie") || "";
-  if (!adminCookie.includes("admin=1")) {
+  const cookieHeader = req.headers.get("cookie") || "";
+  if (!isAuthenticatedAdminFromCookieHeader(cookieHeader)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
     const form = await req.formData();
-    const files = (form.getAll("logo") as any[])
-      .concat(form.getAll("logos") as any[])
-      .filter((f) => f && typeof f === "object" && typeof (f as File).arrayBuffer === "function") as File[];
-
-    if (!files.length) {
-      return NextResponse.json({ error: "No files provided" }, { status: 400 });
+    const files = form.getAll("logo") as File[];
+    if (!files || files.length === 0) {
+      return NextResponse.json({ error: "No files" }, { status: 400 });
     }
 
+    const MAX_BYTES = 10 * 1024 * 1024; // 10MB per file
     const urls: string[] = [];
+
     for (const file of files) {
-      if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) {
-        // Skip invalid files silently; only process valid images up to 10MB
-        continue;
+      if (!(file instanceof File)) continue;
+      const type = file.type || "";
+      if (!type.startsWith("image/")) {
+        return NextResponse.json({ error: "Invalid file type (image only)" }, { status: 400 });
       }
-      const original = (file as any).name || "logo";
-      const ext = path.extname(original) || extFromMime(file.type) || ".bin";
-      const base = safeName(path.parse(original).name) || "logo";
+      const size = (file as any).size ?? 0;
+      if (size > MAX_BYTES) {
+        return NextResponse.json({ error: "File too large (max 10MB)" }, { status: 400 });
+      }
+
+      const originalName = (file as any).name || "logo";
+      const ext = extFromMime(type) || path.extname(originalName) || ".jpg";
+      const base = slugify(path.basename(originalName, path.extname(originalName)) || "logo") || "logo";
       const filename = `${base}-${Date.now()}${ext}`;
-      const relPath = path.join("uploads", "partners", filename);
-      const buf = Buffer.from(await file.arrayBuffer());
-      const publicSrc = await savePublicUpload(relPath, buf, file.type || "application/octet-stream");
+      const relPath = path.join("uploads", "partner-logos", filename);
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const publicSrc = await savePublicUpload(relPath, buffer, type || "application/octet-stream");
       urls.push(publicSrc);
     }
 
-    if (!urls.length) {
-      return NextResponse.json({ error: "No valid image files uploaded" }, { status: 400 });
-    }
-
-    return NextResponse.json({ ok: true, urls, src: urls[0] });
-  } catch (e) {
-    console.error("Partner logo upload failed", e);
-    return NextResponse.json({ error: "Failed to upload" }, { status: 500 });
+    return NextResponse.json({ ok: true, urls });
+  } catch (e: any) {
+    const message = e?.message ? String(e.message) : "Failed to upload";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
