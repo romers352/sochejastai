@@ -23,8 +23,15 @@ export async function savePublicUpload(relPath: string, buffer: Buffer, contentT
   } catch (err) {
     if (!isReadOnlyFsError(err)) throw err;
     const cleanRel = relPath.replace(/^\/+/, "");
-    const { url } = await put(cleanRel, buffer, { access: "public", contentType });
-    return url;
+    try {
+      const { url } = await put(cleanRel, buffer, { access: "public", contentType });
+      return url;
+    } catch (blobErr: any) {
+      const msg = String(blobErr?.message || "Blob upload failed");
+      throw new Error(
+        `Blob upload failed: ${msg}. Link a Vercel Blob store to this project or set BLOB_READ_WRITE_TOKEN.`
+      );
+    }
   }
 }
 
@@ -48,12 +55,19 @@ export async function savePublicUploadStream(relPath: string, webStream: Readabl
   } catch (err) {
     if (!isReadOnlyFsError(err)) throw err;
     const cleanRel = relPath.replace(/^\/+/, "");
-    if (webStream) {
-      const { url } = await put(cleanRel, webStream as any, { access: "public", contentType });
+    try {
+      if (webStream) {
+        const { url } = await put(cleanRel, webStream as any, { access: "public", contentType });
+        return url;
+      }
+      if (!fallbackBuffer) throw new Error("Cannot blob-upload without buffer");
+      const { url } = await put(cleanRel, fallbackBuffer, { access: "public", contentType });
       return url;
+    } catch (blobErr: any) {
+      const msg = String(blobErr?.message || "Blob upload failed");
+      throw new Error(
+        `Blob upload failed: ${msg}. Link a Vercel Blob store to this project or set BLOB_READ_WRITE_TOKEN.`
+      );
     }
-    if (!fallbackBuffer) throw new Error("Cannot blob-upload without buffer");
-    const { url } = await put(cleanRel, fallbackBuffer, { access: "public", contentType });
-    return url;
   }
 }
