@@ -202,17 +202,17 @@ export default function Home() {
       {/*  */}
 
       {/* Services Section */}
-      <section className="py-20 bg-white animate-fade-in-up">
+      <section className="py-16 sm:py-20 bg-white animate-fade-in-up">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 animate-fade-in-up delay-200">Our Services</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto animate-fade-in-up delay-400">
+            <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto animate-fade-in-up delay-400">
               We understand the different avenues of digital marketing and know how to bring it all together. 
               Our services have a real impact on the online world as well as in the conventional marketplace.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {services.map((s, index) => {
               const iconIsImage = !!s.icon && (s.icon.startsWith("/") || s.icon.startsWith("http"));
               const emoji = (() => {
@@ -225,16 +225,16 @@ export default function Home() {
                 }
               })();
               return (
-                <div key={s.id} className={`bg-gray-50 p-8 rounded-xl hover:shadow-lg transition-all duration-500 hover:scale-105 hover:-translate-y-2 transform animate-fade-in-up`} style={{animationDelay: `${(index + 1) * 100}ms`}}>
-                  <div className="w-12 h-12 bg-[#ff914d] rounded-lg flex items-center justify-center mb-6 transition-all duration-300 hover:scale-110 hover:rotate-6 transform overflow-hidden">
+                <div key={s.id} className={`bg-gray-50 p-4 sm:p-6 lg:p-8 rounded-xl hover:shadow-lg transition-all duration-500 hover:scale-105 hover:-translate-y-2 transform animate-fade-in-up`} style={{animationDelay: `${(index + 1) * 100}ms`}}>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#ff914d] rounded-lg flex items-center justify-center mb-4 sm:mb-6 transition-all duration-300 hover:scale-110 hover:rotate-6 transform overflow-hidden">
                     {iconIsImage ? (
-                      <img src={s.icon || ""} alt={s.title} className="w-10 h-10 object-contain" />
+                      <img src={s.icon || ""} alt={s.title} className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
                     ) : (
-                      <span className="text-2xl leading-none text-white">{emoji}</span>
+                      <span className="text-xl sm:text-2xl leading-none text-white">{emoji}</span>
                     )}
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{s.title}</h3>
-                  <p className="text-gray-600">{s.description}</p>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">{s.title}</h3>
+                  <p className="text-sm sm:text-base text-gray-600">{s.description}</p>
                 </div>
               );
             })}
@@ -369,17 +369,17 @@ export default function Home() {
       
 
       {/* Contact CTA Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 animate-fade-in-up" aria-labelledby="contact-heading">
-        <div className="bg-gradient-to-r from-[#ff914d] to-[#ff914d]/80 rounded-2xl p-12 text-center text-white">
-          <h2 id="contact-heading" className="text-3xl sm:text-4xl font-bold mb-4 animate-fade-in-up delay-200">Have a Project in Mind?</h2>
-          <p className="text-xl mb-8 opacity-90 animate-fade-in-up delay-400">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-20 animate-fade-in-up" aria-labelledby="contact-heading">
+        <div className="bg-gradient-to-r from-[#ff914d] to-[#ff914d]/80 rounded-2xl p-6 sm:p-12 text-center text-white">
+          <h2 id="contact-heading" className="text-2xl sm:text-4xl font-bold mb-3 sm:mb-4 animate-fade-in-up delay-200">Have a Project in Mind?</h2>
+          <p className="text-base sm:text-xl mb-6 sm:mb-8 opacity-90 animate-fade-in-up delay-400">
             Reach out and let's craft something great together.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/contact" className="inline-block px-8 py-4 bg-white text-[#ff914d] font-semibold rounded-lg hover:bg-gray-100 transition-colors">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+            <Link href="/contact" className="inline-block w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-white text-[#ff914d] font-semibold rounded-lg hover:bg-gray-100 transition-colors">
               Contact Us
             </Link>
-            <Link href="/photos" className="inline-block px-8 py-4 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-[#ff914d] transition-colors">
+            <Link href="/photos" className="inline-block w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-[#ff914d] transition-colors">
               View Portfolio
             </Link>
           </div>
@@ -391,6 +391,7 @@ export default function Home() {
 
 function TestimonialsSection() {
   const [items, setItems] = useState<{ id: number; name: string; role: string; initials?: string | null; quote: string; rating?: number | null; avatar?: string | null }[]>([]);
+  const [swiperInst, setSwiperInst] = useState<any | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/testimonials", { signal: controller.signal })
@@ -399,6 +400,10 @@ function TestimonialsSection() {
       .catch(() => setItems([]));
     return () => controller.abort();
   }, []);
+  const handleMouseEnter = () => swiperInst?.autoplay?.stop();
+  const handleMouseLeave = () => swiperInst?.autoplay?.start();
+  const handleTouchStart = () => swiperInst?.autoplay?.stop();
+  const handleTouchEnd = () => swiperInst?.autoplay?.start();
   return (
     <section className="py-20 bg-gray-50 animate-fade-in-up">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -410,35 +415,16 @@ function TestimonialsSection() {
         </div>
         {items.length > 0 && (
           <div className="relative">
-            {items.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  aria-label="Previous testimonial"
-                  className="testimonials-prev absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white rounded-full shadow border border-[#ff914d]/40 p-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ff914d" strokeWidth="2" className="w-6 h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  aria-label="Next testimonial"
-                  className="testimonials-next absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white rounded-full shadow border border-[#ff914d]/40 p-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ff914d" strokeWidth="2" className="w-6 h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </>
-            )}
+            <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
             <Swiper
             key={items.length}
-            modules={[Navigation]}
+            modules={[Autoplay]}
             loop={items.length > 1}
-            navigation={{ prevEl: ".testimonials-prev", nextEl: ".testimonials-next" }}
+            autoplay={{ delay: 4000, pauseOnMouseEnter: true, disableOnInteraction: false }}
             slidesPerView={1}
             spaceBetween={20}
+            allowTouchMove={false}
+            onSwiper={(s) => setSwiperInst(s)}
             breakpoints={{
               640: { slidesPerView: 2, spaceBetween: 24 },
               1024: { slidesPerView: 3, spaceBetween: 28 },
@@ -477,6 +463,7 @@ function TestimonialsSection() {
               </SwiperSlide>
             ))}
           </Swiper>
+            </div>
           </div>
         )}
       </div>
@@ -502,7 +489,7 @@ function CTAImages() {
               <img src={data.photos} alt="Photos" className="h-full w-full object-cover" />
             </div>
           )}
-          <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+          <div className="absolute bottom-4 right-4 opacity-100 translate-y-0 sm:opacity-0 sm:translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0 sm:group-focus-within:opacity-100 sm:group-focus-within:translate-y-0 transition-all duration-300">
             <span className="px-4 py-2 rounded-lg bg-[#ff914d] text-white shadow">Click Me</span>
           </div>
           <div className="relative">
@@ -519,7 +506,7 @@ function CTAImages() {
               <img src={data.videos} alt="Videos" className="h-full w-full object-cover" />
             </div>
           )}
-          <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+          <div className="absolute bottom-4 right-4 opacity-100 translate-y-0 sm:opacity-0 sm:translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0 sm:group-focus-within:opacity-100 sm:group-focus-within:translate-y-0 transition-all duration-300">
             <span className="px-4 py-2 rounded-lg bg-[#ff914d] text-white shadow">Click Me</span>
           </div>
           <div className="relative">
@@ -536,7 +523,7 @@ function CTAImages() {
               <img src={data.graphics} alt="Graphics" className="h-full w-full object-cover" />
             </div>
           )}
-          <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+          <div className="absolute bottom-4 right-4 opacity-100 translate-y-0 sm:opacity-0 sm:translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0 sm:group-focus-within:opacity-100 sm:group-focus-within:translate-y-0 transition-all duration-300">
             <span className="px-4 py-2 rounded-lg bg-[#ff914d] text-white shadow">Click Me</span>
           </div>
           <div className="relative">
