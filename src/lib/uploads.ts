@@ -24,7 +24,11 @@ export async function savePublicUpload(relPath: string, buffer: Buffer, contentT
     if (!isReadOnlyFsError(err)) throw err;
     const cleanRel = relPath.replace(/^\/+/, "");
     try {
-      const { url } = await put(cleanRel, buffer, { access: "public", contentType });
+      const { url } = await put(cleanRel, buffer, {
+        access: "public",
+        contentType,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
       return url;
     } catch (blobErr: any) {
       const msg = String(blobErr?.message || "Blob upload failed");
@@ -57,11 +61,19 @@ export async function savePublicUploadStream(relPath: string, webStream: Readabl
     const cleanRel = relPath.replace(/^\/+/, "");
     try {
       if (webStream) {
-        const { url } = await put(cleanRel, webStream as any, { access: "public", contentType });
+        const { url } = await put(cleanRel, webStream as any, {
+          access: "public",
+          contentType,
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
         return url;
       }
       if (!fallbackBuffer) throw new Error("Cannot blob-upload without buffer");
-      const { url } = await put(cleanRel, fallbackBuffer, { access: "public", contentType });
+      const { url } = await put(cleanRel, fallbackBuffer, {
+        access: "public",
+        contentType,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
       return url;
     } catch (blobErr: any) {
       const msg = String(blobErr?.message || "Blob upload failed");
