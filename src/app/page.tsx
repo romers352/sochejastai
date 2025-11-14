@@ -502,6 +502,9 @@ function CTAImages() {
               <img src={data.photos} alt="Photos" className="h-full w-full object-cover" />
             </div>
           )}
+          <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+            <span className="px-4 py-2 rounded-lg bg-[#ff914d] text-white shadow">Click Me</span>
+          </div>
           <div className="relative">
             <h3 className="text-xl font-semibold text-[#ff914d] group-hover:opacity-80 transition-opacity">Photo Gallery</h3>
             <p className="text-[#ff914d]/80 text-sm">Click to view photos</p>
@@ -516,6 +519,9 @@ function CTAImages() {
               <img src={data.videos} alt="Videos" className="h-full w-full object-cover" />
             </div>
           )}
+          <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+            <span className="px-4 py-2 rounded-lg bg-[#ff914d] text-white shadow">Click Me</span>
+          </div>
           <div className="relative">
             <h3 className="text-xl font-semibold text-[#ff914d] group-hover:opacity-80 transition-opacity">Video Gallery</h3>
             <p className="text-[#ff914d]/80 text-sm">Click to watch videos</p>
@@ -530,6 +536,9 @@ function CTAImages() {
               <img src={data.graphics} alt="Graphics" className="h-full w-full object-cover" />
             </div>
           )}
+          <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+            <span className="px-4 py-2 rounded-lg bg-[#ff914d] text-white shadow">Click Me</span>
+          </div>
           <div className="relative">
             <h3 className="text-xl font-semibold text-[#ff914d] group-hover:opacity-80 transition-opacity">Graphic Design</h3>
             <p className="text-[#ff914d]/80 text-sm">Click to view designs</p>
