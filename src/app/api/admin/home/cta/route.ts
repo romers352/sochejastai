@@ -4,7 +4,7 @@ import path from "path";
 import pool from "../../../../lib/db";
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-import { put } from "@vercel/blob";
+import { savePublicUpload } from "@/lib/uploads";
 
 const dataPath = path.join(process.cwd(), "data", "home_cta.json");
 
@@ -44,9 +44,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Only images up to 10MB are allowed" }, { status: 400 });
     }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "home", "cta");
-    await fs.mkdir(uploadsDir, { recursive: true });
-
     const saved: Record<string, string | null> = { photos: null, videos: null, graphics: null };
 
     async function saveFile(f: File | null, slot: "photos" | "videos" | "graphics") {
@@ -55,22 +52,10 @@ export async function POST(req: Request) {
       const ext = path.extname(original) || extFromMime(f.type) || ".bin";
       const base = safeName(path.parse(original).name) || slot;
       const filename = `${base}-${Date.now()}-${slot}${ext}`;
+      const relPath = path.join("uploads", "home", "cta", filename);
       const buf = Buffer.from(await f.arrayBuffer());
-      // Prefer Vercel Blob if token is available (works on Vercel)
-      const token = process.env.BLOB_READ_WRITE_TOKEN;
-      if (token) {
-        const res = await put(filename, buf, {
-          access: "public",
-          contentType: f.type || "application/octet-stream",
-          token,
-        });
-        saved[slot] = res.url;
-      } else {
-        // Local dev fallback to filesystem
-        const filepath = path.join(uploadsDir, filename);
-        await fs.writeFile(filepath, buf);
-        saved[slot] = `/uploads/home/cta/${filename}`;
-      }
+      const publicSrc = await savePublicUpload(relPath, buf, f.type || "application/octet-stream");
+      saved[slot] = publicSrc;
     }
 
     await Promise.all([
