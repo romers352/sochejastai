@@ -64,12 +64,43 @@ export async function POST(req: Request) {
       saveFile(graphics, "graphics"),
     ]);
 
-    // Merge into existing JSON (if any)
-    let current: Record<string, any> = {};
+    // Read current from DB first, fallback to JSON to avoid stale overwrites
+    let current: { photos: string | null; videos: string | null; graphics: string | null } = {
+      photos: null,
+      videos: null,
+      graphics: null,
+    };
     try {
-      const buf = await fs.readFile(dataPath, "utf-8");
-      current = JSON.parse(buf || "{}") || {};
-    } catch {}
+      const [rows] = await pool.query(
+        "SELECT photos, videos, graphics FROM home_cta WHERE id = 1 LIMIT 1"
+      );
+      const row = Array.isArray(rows) && rows.length ? (rows as any)[0] : null;
+      if (row) {
+        current = {
+          photos: row.photos || null,
+          videos: row.videos || null,
+          graphics: row.graphics || null,
+        };
+      } else {
+        const buf = await fs.readFile(dataPath, "utf-8").catch(() => "");
+        const json = buf ? JSON.parse(buf || "{}") || {} : {};
+        current = {
+          photos: json.photos || null,
+          videos: json.videos || null,
+          graphics: json.graphics || null,
+        };
+      }
+    } catch {
+      try {
+        const buf = await fs.readFile(dataPath, "utf-8");
+        const json = JSON.parse(buf || "{}") || {};
+        current = {
+          photos: json.photos || null,
+          videos: json.videos || null,
+          graphics: json.graphics || null,
+        };
+      } catch {}
+    }
 
     const next = {
       photos: saved.photos || current.photos || null,
