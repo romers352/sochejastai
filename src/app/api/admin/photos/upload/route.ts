@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 export const runtime = 'nodejs';
 import { promises as fs } from "fs";
 import path from "path";
-import pool from "../../../../../lib/db";
+import pool from "@/lib/db";
 import { savePublicUpload } from "@/lib/uploads";
 
 function extFromMime(mime: string): string {
@@ -57,14 +57,18 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const publicSrc = await savePublicUpload(relPath, buffer, file.type || "application/octet-stream");
 
-    // Insert into MySQL
+    // Ensure table exists and insert into MySQL
+    await pool.execute(
+      "CREATE TABLE IF NOT EXISTS photos (id INT UNSIGNED NOT NULL AUTO_INCREMENT, title VARCHAR(255) NOT NULL, src VARCHAR(1024) NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (id), INDEX (created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+    );
     const [result] = await pool.execute(
       "INSERT INTO photos (title, src) VALUES (?, ?)",
       [title, publicSrc]
     );
     const id = (result as any).insertId;
     return NextResponse.json({ ok: true, id, src: publicSrc });
-  } catch (e) {
-    return NextResponse.json({ error: "Failed to upload photo" }, { status: 500 });
+  } catch (e: any) {
+    const message = e?.message ? String(e.message) : "Failed to upload photo";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
