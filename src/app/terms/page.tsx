@@ -1,8 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import pool from "@/lib/db";
-
-export const dynamic = "force-dynamic";
+export const revalidate = 600;
 
 async function readLegal(): Promise<{ privacy_html: string; terms_html: string }> {
   // Prefer DB first (dynamic), fallback to JSON file

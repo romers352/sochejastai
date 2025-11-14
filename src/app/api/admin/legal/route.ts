@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { promises as fs } from "fs";
 import path from "path";
 import { cookies } from "next/headers";
-import pool from "../../../../lib/db";
+import pool from "@/lib/db";
 
 const dataPath = path.join(process.cwd(), "data", "legal.json");
 
@@ -56,26 +56,26 @@ export async function PUT(req: Request) {
     const privacy_html = typeof body?.privacy_html === "string" ? body.privacy_html : "";
     const terms_html = typeof body?.terms_html === "string" ? body.terms_html : "";
 
-    // Try file write first
+    // Persist to DB first (source of truth), then mirror to file for local dev fallback
+    try {
+      await pool.execute(
+        "CREATE TABLE IF NOT EXISTS legal (id INT UNSIGNED NOT NULL, privacy_html MEDIUMTEXT NULL, terms_html MEDIUMTEXT NULL, PRIMARY KEY (id))"
+      );
+      await pool.execute(
+        "INSERT INTO legal (id, privacy_html, terms_html) VALUES (1, ?, ?) ON DUPLICATE KEY UPDATE privacy_html=VALUES(privacy_html), terms_html=VALUES(terms_html)",
+        [privacy_html, terms_html]
+      );
+    } catch (dbErr) {
+      return NextResponse.json({ error: "Failed to persist legal content" }, { status: 500 });
+    }
+
+    // Best-effort mirror to JSON file
     try {
       await fs.mkdir(path.dirname(dataPath), { recursive: true });
       await fs.writeFile(dataPath, JSON.stringify({ privacy_html, terms_html }, null, 2), "utf-8");
-      return NextResponse.json({ ok: true, privacy_html, terms_html });
-    } catch (err) {
-      // Fallback to DB in read-only environments
-      try {
-        await pool.execute(
-          "CREATE TABLE IF NOT EXISTS legal (id INT UNSIGNED NOT NULL, privacy_html MEDIUMTEXT NULL, terms_html MEDIUMTEXT NULL, PRIMARY KEY (id))"
-        );
-        await pool.execute(
-          "INSERT INTO legal (id, privacy_html, terms_html) VALUES (1, ?, ?) ON DUPLICATE KEY UPDATE privacy_html=VALUES(privacy_html), terms_html=VALUES(terms_html)",
-          [privacy_html, terms_html]
-        );
-        return NextResponse.json({ ok: true, privacy_html, terms_html });
-      } catch (dbErr) {
-        return NextResponse.json({ error: "Failed to persist legal content" }, { status: 500 });
-      }
-    }
+    } catch {}
+
+    return NextResponse.json({ ok: true, privacy_html, terms_html });
   } catch {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }

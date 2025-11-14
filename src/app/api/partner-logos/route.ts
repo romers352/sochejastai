@@ -3,7 +3,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 import { promises as fs } from "fs";
 import path from "path";
-import pool from "../../../lib/db";
+import pool from "@/lib/db";
 
 const dataPath = path.join(process.cwd(), "data", "partner_logos.json");
 
