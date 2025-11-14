@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
-import pool from "../../../../../lib/db";
-import { put } from "@vercel/blob";
+import pool from "@/lib/db";
+import { savePublicUpload } from "@/lib/uploads";
 
 export const runtime = "nodejs";
 
@@ -79,21 +79,7 @@ export async function POST(req: Request) {
     const filenameWide = `${base}-${ts}-wide${extOutWide}`;
     const filenameSquare = `${base}-${ts}-square${extOutSquare}`;
 
-    async function savePublicUpload(relPath: string, buffer: Buffer, contentType: string): Promise<string> {
-      const absPath = path.join(process.cwd(), "public", relPath);
-      try {
-        await fs.mkdir(path.dirname(absPath), { recursive: true });
-        await fs.writeFile(absPath, buffer);
-        return `/${relPath.replace(/\\+/g, "/")}`;
-      } catch (err: any) {
-        const msg = String(err?.message || "");
-        const isReadOnly = msg.includes("read-only") || msg.includes("EROFS") || process.env.VERCEL === "1";
-        if (!isReadOnly) throw err;
-        const cleanRel = relPath.replace(/^\/+/, "");
-        const { url } = await put(cleanRel, buffer, { access: "public", contentType });
-        return url;
-      }
-    }
+    // Using shared savePublicUpload from '@/lib/uploads'
 
     let publicSrcWide: string;
     let publicSrcSquare: string;
@@ -109,9 +95,12 @@ export async function POST(req: Request) {
       throw err;
     }
 
-    // Insert into MySQL: store image path in `bg`
+    // Insert into MySQL: ensure table exists, then store image paths
     // Insert with new columns; alter table if needed
     try {
+      await pool.execute(
+        "CREATE TABLE IF NOT EXISTS banners (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NULL, subtitle VARCHAR(255) NULL, bg VARCHAR(255) NOT NULL, bg_wide VARCHAR(255) NULL, bg_square VARCHAR(255) NULL, photo1 VARCHAR(255) NULL, photo2 VARCHAR(255) NULL, photo3 VARCHAR(255) NULL)"
+      );
       const [result] = await pool.execute(
         "INSERT INTO banners (title, subtitle, bg, bg_wide, bg_square) VALUES (?, ?, ?, ?, ?)",
         [title || "", subtitle || "", publicSrcWide, publicSrcWide, publicSrcSquare]
@@ -130,10 +119,11 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true, id: id2, wide: publicSrcWide, square: publicSrcSquare });
       }
       console.error("Banner insert failed", err);
-      return NextResponse.json({ error: "Failed to save banner" }, { status: 500 });
+      return NextResponse.json({ error: msg || "Failed to save banner" }, { status: 500 });
     }
   } catch (e) {
     console.error("Banner upload failed", e);
-    return NextResponse.json({ error: "Failed to upload banner" }, { status: 500 });
+    const msg = typeof (e as any)?.message === "string" ? (e as any).message : "Failed to upload banner";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
