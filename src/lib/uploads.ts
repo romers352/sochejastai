@@ -16,6 +16,27 @@ function isReadOnlyFsError(err: any): boolean {
 
 export async function savePublicUpload(relPath: string, buffer: Buffer, contentType: string): Promise<string> {
   const absPath = path.join(process.cwd(), "public", relPath);
+  const preferBlob = process.env.VERCEL === "1";
+
+  // In Vercel prod, write to Blob first to ensure public availability
+  if (preferBlob) {
+    const cleanRel = relPath.replace(/^\/+/, "");
+    try {
+      const { url } = await put(cleanRel, buffer, {
+        access: "public",
+        contentType,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
+      return url;
+    } catch (blobErr: any) {
+      const msg = String(blobErr?.message || "Blob upload failed");
+      throw new Error(
+        `Blob upload failed: ${msg}. Link a Vercel Blob store or set BLOB_READ_WRITE_TOKEN.`
+      );
+    }
+  }
+
+  // Local/dev: write to public folder; fallback to Blob if read-only
   try {
     await fs.mkdir(path.dirname(absPath), { recursive: true });
     await fs.writeFile(absPath, buffer);
@@ -41,6 +62,34 @@ export async function savePublicUpload(relPath: string, buffer: Buffer, contentT
 
 export async function savePublicUploadStream(relPath: string, webStream: ReadableStream | null, fallbackBuffer: Buffer | null, contentType: string): Promise<string> {
   const absPath = path.join(process.cwd(), "public", relPath);
+  const preferBlob = process.env.VERCEL === "1";
+
+  if (preferBlob) {
+    const cleanRel = relPath.replace(/^\/+/, "");
+    try {
+      if (webStream) {
+        const { url } = await put(cleanRel, webStream as any, {
+          access: "public",
+          contentType,
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
+        return url;
+      }
+      if (!fallbackBuffer) throw new Error("Cannot blob-upload without buffer");
+      const { url } = await put(cleanRel, fallbackBuffer, {
+        access: "public",
+        contentType,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
+      return url;
+    } catch (blobErr: any) {
+      const msg = String(blobErr?.message || "Blob upload failed");
+      throw new Error(
+        `Blob upload failed: ${msg}. Link a Vercel Blob store or set BLOB_READ_WRITE_TOKEN.`
+      );
+    }
+  }
+
   try {
     await fs.mkdir(path.dirname(absPath), { recursive: true });
     if (webStream) {
