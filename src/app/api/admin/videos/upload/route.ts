@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+export const runtime = 'nodejs';
 import { promises as fs } from "fs";
 import { createWriteStream } from "fs";
 import { Readable } from "stream";
 import { pipeline } from "stream/promises";
 import path from "path";
 import pool from "../../../../../lib/db";
+import { savePublicUploadStream } from "@/lib/uploads";
 
 function extFromMime(mime: string): string {
   const map: Record<string, string> = {
@@ -48,28 +50,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "File too large (max 1GB)" }, { status: 400 });
     }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "videos");
-    await fs.mkdir(uploadsDir, { recursive: true });
-
     const original = (file as any).name || "video";
     const ext = path.extname(original) || extFromMime(file.type) || ".bin";
     const base = slugify(title || path.parse(original).name) || "video";
     const filename = `${base}-${Date.now()}${ext}`;
-    const filepath = path.join(uploadsDir, filename);
-
-    // Stream the upload to disk to avoid loading the entire file in memory
+    const relPath = path.join("uploads", "videos", filename);
     const webStream = (file as any).stream?.() || null;
-    if (webStream) {
-      const nodeStream = Readable.fromWeb(webStream as any);
-      await pipeline(nodeStream, createWriteStream(filepath));
-    } else {
-      // Fallback for environments without Blob.stream
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      await fs.writeFile(filepath, buffer);
-    }
-
-    const publicSrc = `/uploads/videos/${filename}`;
+    const fallbackBuffer = webStream ? null : Buffer.from(await file.arrayBuffer());
+    const publicSrc = await savePublicUploadStream(relPath, webStream as any, fallbackBuffer, file.type || "application/octet-stream");
 
     // Insert into MySQL
     const [result] = await pool.execute(

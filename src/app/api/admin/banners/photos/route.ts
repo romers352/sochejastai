@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+export const runtime = 'nodejs';
 import { promises as fs } from "fs";
 import path from "path";
 import pool from "../../../../../lib/db";
+import { savePublicUpload } from "@/lib/uploads";
 
 function extFromMime(mime: string): string {
   const map: Record<string, string> = {
@@ -43,9 +45,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Provide at least one photo" }, { status: 400 });
     }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "banners", "photos");
-    await fs.mkdir(uploadsDir, { recursive: true });
-
     const allow = (f: File | null) => !f || (f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024);
     if (!allow(photo1) || !allow(photo2) || !allow(photo3)) {
       return NextResponse.json({ error: "Only images up to 10MB are allowed" }, { status: 400 });
@@ -58,10 +57,10 @@ export async function POST(req: Request) {
       const ext = path.extname(original) || extFromMime(f.type) || ".bin";
       const base = safeName(path.parse(original).name) || slot;
       const filename = `${base}-${Date.now()}-${slot}${ext}`;
-      const filepath = path.join(uploadsDir, filename);
+      const relPath = path.join("uploads", "banners", "photos", filename);
       const buf = Buffer.from(await f.arrayBuffer());
-      await fs.writeFile(filepath, buf);
-      saved[slot] = `/uploads/banners/photos/${filename}`;
+      const publicSrc = await savePublicUpload(relPath, buf, f.type || "application/octet-stream");
+      saved[slot] = publicSrc;
     }
 
     await Promise.all([saveFile(photo1, "photo1"), saveFile(photo2, "photo2"), saveFile(photo3, "photo3")]);

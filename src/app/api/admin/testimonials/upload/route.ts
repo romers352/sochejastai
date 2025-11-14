@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+export const runtime = 'nodejs';
 import { promises as fs } from "fs";
 import path from "path";
 import pool from "../../../../../lib/db";
 import { isAuthenticatedAdminFromCookieHeader } from "@/lib/auth";
+import { savePublicUpload } from "@/lib/uploads";
 
 function extFromMime(mime: string): string {
   const map: Record<string, string> = {
@@ -30,16 +32,12 @@ export async function POST(req: Request) {
     const MAX_BYTES = 10 * 1024 * 1024; // 10MB
     if ((file as any).size > MAX_BYTES) return NextResponse.json({ error: "File too large" }, { status: 400 });
 
-    const bytes = await file.arrayBuffer();
-    const buf = Buffer.from(bytes);
     const ext = extFromMime(file.type) || path.extname(file.name) || ".jpg";
     const baseName = path.basename(file.name, path.extname(file.name)).replace(/[^a-zA-Z0-9_-]/g, "-");
     const filename = `${baseName}-${Date.now()}${ext}`;
     const relPath = path.join("uploads", "testimonials", filename);
-    const outPath = path.join(process.cwd(), "public", relPath);
-    await fs.mkdir(path.dirname(outPath), { recursive: true });
-    await fs.writeFile(outPath, buf);
-    const src = `/${relPath.replace(/\\/g, "/")}`;
+    const buf = Buffer.from(await file.arrayBuffer());
+    const src = await savePublicUpload(relPath, buf, file.type || "application/octet-stream");
 
     if (testimonialId) {
       await pool.execute("UPDATE testimonials SET avatar = ? WHERE id = ?", [src, testimonialId]);

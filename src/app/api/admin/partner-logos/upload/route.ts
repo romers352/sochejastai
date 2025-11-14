@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+export const runtime = 'nodejs';
 import { promises as fs } from "fs";
 import path from "path";
+import { savePublicUpload } from "@/lib/uploads";
 
 function extFromMime(mime: string): string {
   const map: Record<string, string> = {
@@ -37,9 +39,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "partners");
-    await fs.mkdir(uploadsDir, { recursive: true });
-
     const urls: string[] = [];
     for (const file of files) {
       if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) {
@@ -50,10 +49,10 @@ export async function POST(req: Request) {
       const ext = path.extname(original) || extFromMime(file.type) || ".bin";
       const base = safeName(path.parse(original).name) || "logo";
       const filename = `${base}-${Date.now()}${ext}`;
-      const filepath = path.join(uploadsDir, filename);
+      const relPath = path.join("uploads", "partners", filename);
       const buf = Buffer.from(await file.arrayBuffer());
-      await fs.writeFile(filepath, buf);
-      urls.push(`/uploads/partners/${filename}`);
+      const publicSrc = await savePublicUpload(relPath, buf, file.type || "application/octet-stream");
+      urls.push(publicSrc);
     }
 
     if (!urls.length) {

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+export const runtime = 'nodejs';
 import { promises as fs } from "fs";
 import path from "path";
 import pool from "../../../../../lib/db";
+import { savePublicUpload } from "@/lib/uploads";
 
 function extFromMime(mime: string): string {
   const map: Record<string, string> = {
@@ -47,20 +49,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "File too large (max 4MB)" }, { status: 400 });
     }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "graphics");
-    await fs.mkdir(uploadsDir, { recursive: true });
-
     const original = (file as any).name || "image";
     const ext = path.extname(original) || extFromMime(file.type) || ".bin";
     const base = slugify(title || path.parse(original).name) || "graphic";
     const filename = `${base}-${Date.now()}${ext}`;
-    const filepath = path.join(uploadsDir, filename);
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    await fs.writeFile(filepath, buffer);
-
-    const publicSrc = `/uploads/graphics/${filename}`;
+    const relPath = path.join("uploads", "graphics", filename);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const publicSrc = await savePublicUpload(relPath, buffer, file.type || "application/octet-stream");
 
     // Insert into MySQL
     const [result] = await pool.execute(

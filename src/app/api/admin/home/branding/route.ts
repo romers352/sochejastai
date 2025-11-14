@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+export const runtime = 'nodejs';
 import { promises as fs } from "fs";
 import path from "path";
+import pool from "../../../../lib/db";
+import { savePublicUpload } from "@/lib/uploads";
 
 const dataPath = path.join(process.cwd(), "data", "branding.json");
 
@@ -41,9 +44,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Only images up to 10MB are allowed" }, { status: 400 });
     }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "home", "branding");
-    await fs.mkdir(uploadsDir, { recursive: true });
-
     const saved: Record<string, string | null> = { navbar: null, footer: null, favicon: null };
 
     async function saveFile(f: File | null, slot: "navbar" | "footer" | "favicon") {
@@ -52,10 +52,10 @@ export async function POST(req: Request) {
       const ext = path.extname(original) || extFromMime(f.type) || ".bin";
       const base = safeName(path.parse(original).name) || slot;
       const filename = `${base}-${Date.now()}-${slot}${ext}`;
-      const filepath = path.join(uploadsDir, filename);
+      const relPath = path.join("uploads", "home", "branding", filename);
       const buf = Buffer.from(await f.arrayBuffer());
-      await fs.writeFile(filepath, buf);
-      saved[slot] = `/uploads/home/branding/${filename}`;
+      const publicSrc = await savePublicUpload(relPath, buf, f.type || "application/octet-stream");
+      saved[slot] = publicSrc;
     }
 
     await Promise.all([
@@ -76,7 +76,24 @@ export async function POST(req: Request) {
       favicon: saved.favicon || current.favicon || null,
     };
 
-    await fs.writeFile(dataPath, JSON.stringify(next, null, 2), "utf-8");
+    try {
+      await fs.mkdir(path.dirname(dataPath), { recursive: true });
+      await fs.writeFile(dataPath, JSON.stringify(next, null, 2), "utf-8");
+    } catch (err: any) {
+      // Fallback to DB in read-only environments
+      try {
+        await pool.execute(
+          "CREATE TABLE IF NOT EXISTS branding (id INT PRIMARY KEY, navbar VARCHAR(255) NULL, footer VARCHAR(255) NULL, favicon VARCHAR(255) NULL)"
+        );
+        await pool.execute(
+          "INSERT INTO branding (id, navbar, footer, favicon) VALUES (1, ?, ?, ?) ON DUPLICATE KEY UPDATE navbar=VALUES(navbar), footer=VALUES(footer), favicon=VALUES(favicon)",
+          [next.navbar || null, next.footer || null, next.favicon || null]
+        );
+      } catch (dbErr) {
+        console.error("Branding DB save failed", dbErr);
+        return NextResponse.json({ error: "Failed to persist branding settings" }, { status: 500 });
+      }
+    }
 
     return NextResponse.json({ ok: true, ...next });
   } catch (e) {
