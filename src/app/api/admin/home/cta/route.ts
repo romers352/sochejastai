@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
-import pool from "../../../../lib/db";
+import pool from "@/lib/db";
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 import { savePublicUpload } from "@/lib/uploads";
