@@ -117,7 +117,21 @@ server {
 
 - Windows: run via PowerShell or use a service manager like NSSM.
 - Linux: use a process manager (PM2 or systemd) and set environment variables for the service.
-- Monitor logs and health; consider an uptime monitor.
+ - Monitor logs and health; consider an uptime monitor.
+
+## Seeding Demo Content
+
+To quickly populate example Testimonials and Services in MySQL:
+
+1. Ensure your MySQL environment variables are set locally (or point to your target DB):
+   - `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`
+   - Optional: `MYSQL_SSL=1` and `MYSQL_CA` for SSL
+2. Run:
+   ```
+   npm run seed:demo
+   ```
+   This script creates tables if needed and inserts demo rows only when the tables are empty.
+3. Rerun your app and verify content under Admin.
 
 ## Ports
 
