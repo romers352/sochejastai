@@ -16,6 +16,7 @@
     "prune": "node scripts/cleanup-assets.mjs"
   },
   "dependencies": {
+    "@vercel/blob": "^0.25.1",
     "@tiptap/extension-color": "^3.10.5",
     "@tiptap/extension-heading": "^3.10.5",
     "@tiptap/extension-image": "^3.10.5",

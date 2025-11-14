@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import pool from "../../../../../lib/db";
+import { put } from "@vercel/blob";
+
+export const runtime = "nodejs";
 
 function extFromMime(mime: string): string {
   const map: Record<string, string> = {
@@ -61,7 +64,6 @@ export async function POST(req: Request) {
     }
 
     const uploadsDir = path.join(process.cwd(), "public", "uploads", "banners");
-    await fs.mkdir(uploadsDir, { recursive: true });
 
     const base = slugify(title || path.parse(originalWide).name) || "banner";
     const ts = Date.now();
@@ -76,14 +78,36 @@ export async function POST(req: Request) {
     const extOutSquare = extSquare || extFromMime(fileSquare.type) || ".bin";
     const filenameWide = `${base}-${ts}-wide${extOutWide}`;
     const filenameSquare = `${base}-${ts}-square${extOutSquare}`;
-    const filepathWide = path.join(uploadsDir, filenameWide);
-    const filepathSquare = path.join(uploadsDir, filenameSquare);
 
-    await fs.writeFile(filepathWide, bufWide);
-    await fs.writeFile(filepathSquare, bufSquare);
+    async function savePublicUpload(relPath: string, buffer: Buffer, contentType: string): Promise<string> {
+      const absPath = path.join(process.cwd(), "public", relPath);
+      try {
+        await fs.mkdir(path.dirname(absPath), { recursive: true });
+        await fs.writeFile(absPath, buffer);
+        return `/${relPath.replace(/\\+/g, "/")}`;
+      } catch (err: any) {
+        const msg = String(err?.message || "");
+        const isReadOnly = msg.includes("read-only") || msg.includes("EROFS") || process.env.VERCEL === "1";
+        if (!isReadOnly) throw err;
+        const cleanRel = relPath.replace(/^\/+/, "");
+        const { url } = await put(cleanRel, buffer, { access: "public", contentType });
+        return url;
+      }
+    }
 
-    const publicSrcWide = `/uploads/banners/${filenameWide}`;
-    const publicSrcSquare = `/uploads/banners/${filenameSquare}`;
+    let publicSrcWide: string;
+    let publicSrcSquare: string;
+    try {
+      // Try local filesystem first
+      await fs.mkdir(uploadsDir, { recursive: true });
+      const relWide = path.join("uploads", "banners", filenameWide).replace(/\\+/g, "/");
+      const relSquare = path.join("uploads", "banners", filenameSquare).replace(/\\+/g, "/");
+      publicSrcWide = await savePublicUpload(relWide, bufWide, fileWide.type || "application/octet-stream");
+      publicSrcSquare = await savePublicUpload(relSquare, bufSquare, fileSquare.type || "application/octet-stream");
+    } catch (err) {
+      // Fallback already handled inside savePublicUpload; rethrow only unexpected errors
+      throw err;
+    }
 
     // Insert into MySQL: store image path in `bg`
     // Insert with new columns; alter table if needed
