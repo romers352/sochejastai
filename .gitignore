@@ -40,5 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# uploads (exclude large user assets from repo)
-public/uploads/
+# uploads (you can commit static assets under public/uploads)
+# If you want to keep runtime-generated files out, uncomment the following:
+# public/uploads/tmp/

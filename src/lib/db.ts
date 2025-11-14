@@ -1,5 +1,10 @@
 import mysql from "mysql2/promise";
 
+function sslEnabled(): boolean {
+  const val = (process.env.MYSQL_SSL || "").toLowerCase().trim();
+  return val === "1" || val === "true" || val === "yes" || val === "on";
+}
+
 const pool = mysql.createPool({
   host: process.env.MYSQL_HOST || "192.250.235.148",
   port: Number(process.env.MYSQL_PORT || 3306),
@@ -12,13 +17,12 @@ const pool = mysql.createPool({
   idleTimeout: 60000,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
-  ssl:
-    process.env.MYSQL_SSL === "1"
-      ? {
-          rejectUnauthorized: true,
-          ca: process.env.MYSQL_CA || undefined,
-        }
-      : undefined,
+  ssl: sslEnabled()
+    ? {
+        rejectUnauthorized: true,
+        ca: process.env.MYSQL_CA || undefined,
+      }
+    : undefined,
   multipleStatements: false,
 });
 
